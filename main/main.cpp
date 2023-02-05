@@ -161,7 +161,7 @@ void configure_bluetooth_name(void) {
     }
 
     if (no_of_pressed >= 1) {
-        char bt_name[11];
+        char bt_name[18];
         snprintf(bt_name, sizeof(bt_name), "%s%i", "WiRocBT", no_of_pressed);
         send_bt_name(bt_name);
     }
