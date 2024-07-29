@@ -29,13 +29,14 @@ static const char *TAG = "SportIdent Bluetooth Adapter";
 
 static SemaphoreHandle_t device_disconnected_sem;
 
-static void handle_rx(uint8_t *data, size_t data_len, void *arg)
+static bool handle_rx(const uint8_t *data, size_t data_len, void *arg)
 {
-    printf("%.*s", data_len, data);
+    //printf("%.*s", data_len, data);
      // Write data to UART.
     ESP_LOGI(TAG, "Data length: %d", data_len);
     ESP_LOGI(TAG, "first char: %d", data[0]);
     uart_write_bytes(UART_NUM_1, (const char*)data, data_len);
+    return true;
 }
 
 static void handle_event(const cdc_acm_host_dev_event_data_t *event, void *user_ctx)
@@ -161,7 +162,7 @@ void configure_bluetooth_name(void) {
     }
 
     if (no_of_pressed >= 1) {
-        char bt_name[11];
+        char bt_name[18];
         snprintf(bt_name, sizeof(bt_name), "%s%i", "WiRocBT", no_of_pressed);
         send_bt_name(bt_name);
     }
@@ -204,14 +205,17 @@ extern "C" void app_main(void)
             .user_arg = NULL,
         };
 
-        CP210x *vcp;
+        CP210x *vcp = NULL;
         try {
             ESP_LOGI(TAG, "Opening CP210X device");
             vcp = CP210x::open_cp210x(CP210x_SportIdent_PID, &dev_config);
         }
         catch (esp_err_t err) {
             ESP_LOGE(TAG, "The required device was not opened.\nExiting...");
-            return;
+            if (vcp != NULL) {
+                delete vcp;
+            }
+            continue;
         }
 
         ESP_LOGI(TAG, "Setting up line coding");
@@ -222,14 +226,6 @@ extern "C" void app_main(void)
             .bDataBits = SPORTIDENT_DATA_BITS,
         };
         ESP_ERROR_CHECK(vcp->line_coding_set(&line_coding));
-
-        /*
-        Now the USB-to-UART converter is configured and receiving data.
-        You can use standard CDC-ACM API to interact with it. E.g.
-
-        ESP_ERROR_CHECK(vcp->set_control_line_state(false, true));
-        ESP_ERROR_CHECK(vcp->tx_blocking((uint8_t *)"Test string", 12));
-        */
 
         // We are done. Wait for device disconnection and start over
         xSemaphoreTake(device_disconnected_sem, portMAX_DELAY);
