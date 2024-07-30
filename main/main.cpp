@@ -8,7 +8,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "sdkconfig.h"
-#include "cp210x_usb.hpp"
+//#include "cp210x_usb.hpp"
 #include "usb/usb_host.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -16,6 +16,11 @@
 #include "freertos/semphr.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
+
+
+#include "usb/vcp_cp210x.hpp"
+#define CP210x_SportIdent_PID (0x800a)
+
 
 using namespace esp_usb;
 
@@ -172,7 +177,6 @@ void configure_bluetooth_name(void) {
 
 
 
-
 extern "C" void app_main(void)
 {
     device_disconnected_sem = xSemaphoreCreateBinary();
@@ -208,7 +212,8 @@ extern "C" void app_main(void)
         CP210x *vcp = NULL;
         try {
             ESP_LOGI(TAG, "Opening CP210X device");
-            vcp = CP210x::open_cp210x(CP210x_SportIdent_PID, &dev_config);
+            vcp = new CP210x(CP210x_SportIdent_PID, &dev_config);
+            //vcp = CP210x::open_cp210x(CP210x_SportIdent_PID, &dev_config);
         }
         catch (esp_err_t err) {
             ESP_LOGE(TAG, "The required device was not opened.\nExiting...");
